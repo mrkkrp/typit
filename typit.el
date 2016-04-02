@@ -182,49 +182,40 @@ rendered with ‘typit--render-line’."
                         'face 'typit-normal-text)
             "\n")))
 
-(defun typit--switch-face (start end face enable)
-  "Add or remove face property in given region.
-
-START and END specify region to alter.  FACE is name of face,
-it's added to when ENABLE is not NIL and removed otherwise."
-  (let ((inhibit-read-only t))
-    (with-silent-modifications
-      (funcall
-       (if enable
-           #'add-text-properties
-         #'remove-text-properties)
-       start
-       end
-       (list 'face
-             (cl-mapcan (lambda (x)
-                          (cl-destructuring-bind (prop . val) x
-                            (unless (eql val 'unspecified)
-                              (list prop val))))
-                        (face-all-attributes face (selected-frame))))))))
-
 (defun typit--select-word (offset current-word &optional unselect)
   "Change font properties of a word.
 
 OFFSET specifies position where word starts.  CURRENT-WORD is the
 word to highlight.  By default the word is selected, unless
 UNSELECT is not NIL — in this case it's unselected."
-  (typit--switch-face
-   offset
-   (+ offset (length current-word))
-   'typit-current-word
-   (not unselect)))
+  (if unselect
+      (dolist (v (overlays-at offset))
+        (when (eq (overlay-get v 'type) 'typit-current-word)
+          (delete-overlay v)))
+    (let ((overlay
+           (make-overlay
+            offset
+            (+ offset (length current-word))
+            nil t nil)))
+      (overlay-put overlay 'type 'typit-current-word)
+      (overlay-put overlay 'face 'typit-current-word))))
 
 (defun typit--highlight-diff-char (pos correct &optional clear)
   "Highlight diff for one char at position POS.
 
 If the char should be highlighted as correctly typed, pass
 non-NIL CORRECT.  If CLEAR is not NIL, just clear that char."
-  (typit--switch-face
-   pos (1+ pos)
-   (if correct
-       'typit-correct-char
-     'typit-wrong-char)
-   t))
+  (let ((inhibit-read-only t))
+    (with-silent-modifications
+      (add-text-properties
+       pos (1+ pos)
+       (list
+        'face
+        (if clear
+            'typit-normal-text
+          (if correct
+              'typit-correct-char
+            'typit-wrong-char)))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
