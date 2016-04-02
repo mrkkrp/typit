@@ -48,11 +48,11 @@
   :link   '(url-link :tag "GitHub" "https://github.com/mrkkrp/typit"))
 
 (defface typit-title
-  '((t (:inherit font-lock-contant-face)))
+  '((t (:inherit font-lock-constant-face)))
   "Face used to display Typit buffer title.")
 
 (defface typit-timer
-  '((t (:inherit font-lock-warning-face)))
+  '((t (:inherit font-lock-keyword-face)))
   "Face used to display the timer.")
 
 (defface typit-normal-text
@@ -94,6 +94,11 @@
 (defcustom typit-line-length 80
   "Length of line of words to use."
   :tag  "Length of line of words"
+  :type 'integer)
+
+(defcustom typit-test-time 60
+  "Number of second a test takes."
+  :tag  "Test time"
   :type 'integer)
 
 (defvar typit--dict nil
@@ -157,21 +162,188 @@ between each word (then total length should be close to
         (push word words)))
     (cdr words)))
 
+(defun typit--render-line (words)
+  "Transform list of words WORDS into one string."
+  (mapconcat #'identity words " "))
+
+(defun typit--render-lines (offset first-line second-line)
+  "Render the both lines in current buffer.
+
+The lines are placed beginning from OFFSET (text from OFFSET to
+end of buffer is deleted).  FIRST-LINE and SECOND-LINE are
+rendered with ‘typit--render-line’."
+  (let ((inhibit-read-only t))
+    (delete-region offset (point-max))
+    (goto-char offset)
+    (insert (propertize (typit--render-line first-line)
+                        'face 'typit-normal-text)
+            "\n")
+    (insert (propertize (typit--render-line second-line)
+                        'face 'typit-normal-text)
+            "\n")))
+
+(defun typit--switch-face (start end face enable)
+  "Add or remove face property in given region.
+
+START and END specify region to alter.  FACE is name of face,
+it's added to when ENABLE is not NIL and removed otherwise."
+  (let ((inhibit-read-only t))
+    (with-silent-modifications
+      (funcall
+       (if enable
+           #'add-text-properties
+         #'remove-text-properties)
+       start
+       end
+       (list 'face
+             (cl-mapcan (lambda (x)
+                          (cl-destructuring-bind (prop . val) x
+                            (unless (eql val 'unspecified)
+                              (list prop val))))
+                        (face-all-attributes face (selected-frame))))))))
+
+(defun typit--select-word (offset current-word &optional unselect)
+  "Change font properties of a word.
+
+OFFSET specifies position where word starts.  CURRENT-WORD is the
+word to highlight.  By default the word is selected, unless
+UNSELECT is not NIL — in this case it's unselected."
+  (typit--switch-face
+   offset
+   (+ offset (length current-word))
+   'typit-current-word
+   (not unselect)))
+
+(defun typit--highlight-diff-char (pos correct &optional clear)
+  "Highlight diff for one char at position POS.
+
+If the char should be highlighted as correctly typed, pass
+non-NIL CORRECT.  If CLEAR is not NIL, just clear that char."
+  (typit--switch-face
+   pos (1+ pos)
+   (if correct
+       'typit-correct-char
+     'typit-wrong-char)
+   t))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Top-level interface
 
 ;;;###autoload
-(defun typit-test (words)
-  "Run typing test with using WORDS most common words from dictionary.
+(defun typit-test (num)
+  "Run typing test with using NUM most common words from dictionary.
 
 Dictionary is an array of words in ‘typit-dict’.  By default it's
 English words ordered from most common to least common.  You can
 let-bind the variable and change it, it's recommended to use at
 least 1000 words so ‘typit-advanced-test’ could work properly."
   (interactive "p")
-  ;; TODO write me
-  )
+  (typit--prepare-dict)
+  (let ((first-line   (typit--generate-line num))
+        (second-line  (typit--generate-line num))
+        (rem-seconds  typit-test-time)
+        (timer-offset 0)
+        (init-offset  0)
+        (word-offset  0)
+        (good-strokes 0)
+        (bad-strokes  0)
+        (good-words   0)
+        (bad-words    0)
+        (micro-index  0)
+        (current-word nil)
+        (buffer       (get-buffer-create "*typit*"))
+        (title        "Typit"))
+    (with-current-buffer buffer
+      (with-current-buffer-window
+       ;; buffer or name
+       buffer
+       ;; action (for ‘display-buffer’)
+       (cons 'display-buffer-below-selected
+             '((window-height . fit-window-to-buffer)
+               (preserve-size . (nil . t))))
+       ;; quit-function
+       (lambda (window _value)
+         (unwind-protect
+             (cl-do
+                 ((ch
+                   (read-char "Timer will start when you start typing…" t)
+                   (read-char "Typing…" t)))
+                 ((null ch)) ;; FIXME
+               (cond
+                ;; space
+                ((= ch #x20)
+                 (when current-word
+                   (typit--select-word word-offset (car first-line) t)
+                   (cl-destructuring-bind (w . r) first-line
+                     (if (cl-every #'identity current-word)
+                         (setq good-words (1+ good-words))
+                       (setq bad-words (1+ bad-words)))
+                     (setq
+                      first-line
+                      (or r second-line)
+                      second-line
+                      (if r second-line (typit--generate-line num))
+                      word-offset
+                      (if r (+ word-offset 1 (length w)) init-offset)
+                      good-strokes
+                      (+ good-strokes (cl-count t current-word))
+                      bad-strokes
+                      (+ bad-strokes  (cl-count nil current-word))
+                      micro-index  0
+                      current-word nil)
+                     (unless r
+                       (typit--render-lines init-offset first-line second-line))
+                     (typit--select-word word-offset (car first-line)))))
+                ;; backspace
+                ((= ch #x7f)
+                 (setq micro-index (max 0 (1- micro-index)))
+                 (pop current-word)
+                 (typit--highlight-diff-char (+ word-offset micro-index) nil t))
+                ;; correct stroke
+                ((and (< micro-index (length (car first-line)))
+                      (= ch (elt (car first-line) micro-index)))
+                 (push t current-word)
+                 (typit--highlight-diff-char (+ word-offset micro-index) t)
+                 (setq micro-index (1+ micro-index)))
+                ;; everything else = incorrect stroke
+                (t
+                 (when (< micro-index (length (car first-line)))
+                   (push nil current-word)
+                   (typit--highlight-diff-char (+ word-offset micro-index) nil)
+                   (setq micro-index (1+ micro-index))))))
+           (when (window-live-p window)
+             (quit-restore-window window 'kill))))
+       ;; ↓ body (construction of the buffer contents)
+       (setq cursor-type nil)
+       (insert (propertize title 'face 'typit-title))
+       (setq timer-offset (point))
+       (insert (propertize " 01:00" 'face 'typit-timer)
+               "\n\n")
+       (setq init-offset (point)
+             word-offset init-offset)
+       (typit--render-lines init-offset first-line second-line)
+       (typit--select-word word-offset (car first-line))))))
+
+;; (run-at-time
+;;  typit-test-time (1- typit-test-time)
+;;  (lambda ()
+;;    ;; TODO re-display timer here
+;;    (setq rem-seconds (1- rem-seconds))
+;;    (let ((inhibit-read-only t))
+;;      (delete-region timer-offset (+ timer-offset 6))
+;;      (insert (propertize
+;;               (format-time-string " %M:%S" rem-seconds)
+;;               'face 'typit-timer)))
+;;    (when (and (<= 0 rem-seconds)
+;;               (window-live-p window))
+;;      ;; TODO display stats here
+;;      (erase-buffer)
+;;      (insert "Here go the stats…")
+;;      (if (not (y-or-n-p "Would you like to play again? "))
+;;          (quit-restore-window window 'kill)
+;;        (quit-restore-window window 'kill)
+;;        (typit-test num)))))
 
 ;;;###autoload
 (defun typit-basic-test ()
