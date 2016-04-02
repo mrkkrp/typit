@@ -374,7 +374,7 @@ tools
 low
 reply
 customer
-december
+December
 compare
 movies
 include
@@ -435,8 +435,8 @@ table
 register
 however
 june
-october
-november
+October
+November
 market
 library
 really
@@ -458,7 +458,7 @@ accessories
 cost
 movie
 forums
-march
+March
 September
 better
 say
