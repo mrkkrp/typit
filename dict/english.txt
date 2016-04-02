@@ -142,7 +142,6 @@ after
 best
 software
 then
-jan
 good
 video
 well
@@ -178,7 +177,7 @@ under
 general
 research
 university
-january
+January
 mail
 full
 map
@@ -828,7 +827,7 @@ words
 Linux
 production
 commercial
-james
+James
 weight
 town
 heart
@@ -998,3 +997,4 @@ continue
 across
 benefits
 needed
+season
