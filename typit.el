@@ -69,7 +69,7 @@
   "Face used to color incorrectly typed characters.")
 
 (defface typit-statistic
-  '((t (:inherit font-lock-keyword-face)))
+  '((t (:inherit font-lock-type-face)))
   "Face used to render names of statistical values after typing.")
 
 (defface typit-value
