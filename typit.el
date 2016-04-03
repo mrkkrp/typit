@@ -5,7 +5,7 @@
 ;; Author: Mark Karpov <markkarpov@openmailbox.org>
 ;; URL: https://github.com/typit
 ;; Version: 0.1.0
-;; Package-Requires: ((emacs "24.4") (f "0.18"))
+;; Package-Requires: ((emacs "24.4") (f "0.18") (mmt "0.1.1"))
 ;; Keywords: games
 ;;
 ;; This file is not part of GNU Emacs.
@@ -35,6 +35,7 @@
 
 (require 'cl-lib)
 (require 'f)
+(require 'mmt)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -50,10 +51,6 @@
 (defface typit-title
   '((t (:inherit font-lock-constant-face)))
   "Face used to display Typit buffer title.")
-
-(defface typit-timer
-  '((t (:inherit font-lock-keyword-face)))
-  "Face used to display the timer.")
 
 (defface typit-normal-text
   '((t (:inherit default)))
@@ -98,7 +95,7 @@
 
 (defcustom typit-test-time 60
   "Number of second a test takes."
-  :tag  "Test time"
+  :tag  "Test duration in seconds"
   :type 'integer)
 
 (defvar typit--dict nil
@@ -217,6 +214,86 @@ non-NIL CORRECT.  If CLEAR is not NIL, just clear that char."
               'typit-correct-char
             'typit-wrong-char)))))))
 
+(defmacro typit--with-buffer (quit-function &rest body)
+  "Perform actions using a new temporary Typit buffer and window.
+
+Make new Typit buffer and make it current buffer.  QUIT-FUNCTION
+receives current window object and value returned by BODY as its
+arguments.  It describes what to do when contents of buffer
+generated in BODY are shown to the user.  By the time the buffer
+is shown it's in read-only state.  Note that BODY is evaluated,
+buffer is made empty.
+
+The window is guaranteed to be killed at the end of the day."
+  (declare (indent defun))
+  (mmt-with-gensyms (buffer window value)
+    `(let ((,buffer (get-buffer-create "*typit*")))
+       (with-current-buffer ,buffer
+         (with-current-buffer-window
+          ;; buffer or name
+          ,buffer
+          ;; action (for ‘display-buffer’)
+          (cons 'display-buffer-below-selected
+                '((window-height . fit-window-to-buffer)
+                  (preserve-size . (nil . t))))
+          ;; quit-function
+          (lambda (,window ,value)
+            (unwind-protect
+                (funcall ,quit-function ,window ,value)
+              (when (window-live-p ,window)
+                (quit-restore-window ,window 'kill))))
+          ;; body
+          (setq cursor-type nil)
+          ,@body)))))
+
+(defun typit--report-results
+    (total-time
+     good-strokes
+     bad-strokes
+     good-words
+     bad-words
+     num)
+  "Report results of Typit test to the user.
+
+TOTAL-TIME, GOOD-STROKES, BAD-STROKES, GOOD-WORDS, and BAD-WORDS
+are used to calculate statistics.  NUM is the number of words to
+use as argument of ‘typit-test’ if user chooses to play again."
+  (typit--with-buffer
+    ;; quit-function
+    (lambda (_window _buffer)
+      (while (not (char-equal
+                   (read-char "Press space bar to continue…" t)
+                   32)))
+      (when (y-or-n-p "Would you like to play again? ")
+        (typit-test num)))
+    ;; body
+    (insert
+     (propertize "Your results" 'face 'typit-title)
+     "\n\n"
+     (propertize "Words per minute (WPM)" 'face 'typit-statistic)
+     "  "
+     (propertize (format "%4d" (round (/ good-strokes (/ total-time 12))))
+                 'face 'typit-value)
+     "\n"
+     (propertize "Keystrokes" 'face 'typit-statistic)
+     "              "
+     (propertize (format "%4d" (+ good-strokes bad-strokes))
+                 'face 'typit-value)
+     " ("
+     (propertize (format "%4d" good-strokes) 'face 'typit-correct-char)
+     " | "
+     (propertize (format "%d" bad-strokes) 'face 'typit-wrong-char)
+     ")\n"
+     (propertize "Words" 'face 'typit-statistic)
+     "                   "
+     (propertize (format "%4d" (+ good-words bad-words))
+                 'face 'typit-value)
+     " ("
+     (propertize (format "%4d" good-words) 'face 'typit-correct-char)
+     " | "
+     (propertize (format "%d" bad-words) 'face 'typit-wrong-char)
+     ")\n")))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Top-level interface
@@ -233,8 +310,7 @@ least 1000 words so ‘typit-advanced-test’ could work properly."
   (typit--prepare-dict)
   (let ((first-line   (typit--generate-line num))
         (second-line  (typit--generate-line num))
-        (rem-seconds  typit-test-time)
-        (timer-offset 0)
+        (test-started nil)
         (init-offset  0)
         (word-offset  0)
         (good-strokes 0)
@@ -242,99 +318,77 @@ least 1000 words so ‘typit-advanced-test’ could work properly."
         (good-words   0)
         (bad-words    0)
         (micro-index  0)
-        (current-word nil)
-        (buffer       (get-buffer-create "*typit*"))
-        (title        "Typit"))
-    (with-current-buffer buffer
-      (with-current-buffer-window
-       ;; buffer or name
-       buffer
-       ;; action (for ‘display-buffer’)
-       (cons 'display-buffer-below-selected
-             '((window-height . fit-window-to-buffer)
-               (preserve-size . (nil . t))))
-       ;; quit-function
-       (lambda (window _value)
-         (unwind-protect
-             (cl-do
-                 ((ch
-                   (read-char "Timer will start when you start typing…" t)
-                   (read-char "Typing…" t)))
-                 ((null ch)) ;; FIXME
-               (cond
-                ;; space
-                ((= ch #x20)
-                 (when current-word
-                   (typit--select-word word-offset (car first-line) t)
-                   (cl-destructuring-bind (w . r) first-line
-                     (if (cl-every #'identity current-word)
-                         (setq good-words (1+ good-words))
-                       (setq bad-words (1+ bad-words)))
-                     (setq
-                      first-line
-                      (or r second-line)
-                      second-line
-                      (if r second-line (typit--generate-line num))
-                      word-offset
-                      (if r (+ word-offset 1 (length w)) init-offset)
-                      good-strokes
-                      (+ good-strokes (cl-count t current-word))
-                      bad-strokes
-                      (+ bad-strokes  (cl-count nil current-word))
-                      micro-index  0
-                      current-word nil)
-                     (unless r
-                       (typit--render-lines init-offset first-line second-line))
-                     (typit--select-word word-offset (car first-line)))))
-                ;; backspace
-                ((= ch #x7f)
-                 (setq micro-index (max 0 (1- micro-index)))
-                 (pop current-word)
-                 (typit--highlight-diff-char (+ word-offset micro-index) nil t))
-                ;; correct stroke
-                ((and (< micro-index (length (car first-line)))
-                      (= ch (elt (car first-line) micro-index)))
-                 (push t current-word)
-                 (typit--highlight-diff-char (+ word-offset micro-index) t)
-                 (setq micro-index (1+ micro-index)))
-                ;; everything else = incorrect stroke
-                (t
-                 (when (< micro-index (length (car first-line)))
-                   (push nil current-word)
-                   (typit--highlight-diff-char (+ word-offset micro-index) nil)
-                   (setq micro-index (1+ micro-index))))))
-           (when (window-live-p window)
-             (quit-restore-window window 'kill))))
-       ;; ↓ body (construction of the buffer contents)
-       (setq cursor-type nil)
-       (insert (propertize title 'face 'typit-title))
-       (setq timer-offset (point))
-       (insert (propertize " 01:00" 'face 'typit-timer)
-               "\n\n")
-       (setq init-offset (point)
-             word-offset init-offset)
-       (typit--render-lines init-offset first-line second-line)
-       (typit--select-word word-offset (car first-line))))))
-
-;; (run-at-time
-;;  typit-test-time (1- typit-test-time)
-;;  (lambda ()
-;;    ;; TODO re-display timer here
-;;    (setq rem-seconds (1- rem-seconds))
-;;    (let ((inhibit-read-only t))
-;;      (delete-region timer-offset (+ timer-offset 6))
-;;      (insert (propertize
-;;               (format-time-string " %M:%S" rem-seconds)
-;;               'face 'typit-timer)))
-;;    (when (and (<= 0 rem-seconds)
-;;               (window-live-p window))
-;;      ;; TODO display stats here
-;;      (erase-buffer)
-;;      (insert "Here go the stats…")
-;;      (if (not (y-or-n-p "Would you like to play again? "))
-;;          (quit-restore-window window 'kill)
-;;        (quit-restore-window window 'kill)
-;;        (typit-test num)))))
+        (current-word nil))
+    (typit--with-buffer
+      (lambda (window _value)
+        (typit--report-results
+         (catch 'total-time
+           (cl-do
+               ((ch
+                 (prog1
+                     (read-char "Timer will start when you start typing…" t)
+                   (setq test-started (float-time)))
+                 (read-char "Typing…" t)))
+               ((null ch))
+             (cond
+              ;; space
+              ((= ch #x20)
+               (when current-word
+                 (typit--select-word word-offset (car first-line) t)
+                 (cl-destructuring-bind (w . r) first-line
+                   (if (cl-every #'identity current-word)
+                       (setq good-words (1+ good-words))
+                     (setq bad-words (1+ bad-words)))
+                   (setq
+                    first-line
+                    (or r second-line)
+                    second-line
+                    (if r second-line (typit--generate-line num))
+                    word-offset
+                    (if r (+ word-offset 1 (length w)) init-offset)
+                    good-strokes
+                    (1+ good-strokes) ;; we should count space itself
+                    good-strokes
+                    (+ good-strokes (cl-count t current-word))
+                    bad-strokes
+                    (+ bad-strokes  (cl-count nil current-word))
+                    micro-index  0
+                    current-word nil)
+                   (unless r
+                     (typit--render-lines init-offset first-line second-line))
+                   (typit--select-word word-offset (car first-line)))
+                 (let ((total-time (- (float-time) test-started)))
+                   (when (>= total-time typit-test-time)
+                     (quit-restore-window window 'kill)
+                     (throw 'total-time total-time)))))
+              ;; backspace
+              ((= ch #x7f)
+               (setq micro-index (max 0 (1- micro-index)))
+               (pop current-word)
+               (typit--highlight-diff-char (+ word-offset micro-index) nil t))
+              ;; correct stroke
+              ((and (< micro-index (length (car first-line)))
+                    (= ch (elt (car first-line) micro-index)))
+               (push t current-word)
+               (typit--highlight-diff-char (+ word-offset micro-index) t)
+               (setq micro-index (1+ micro-index)))
+              ;; everything else = incorrect stroke
+              (t
+               (when (< micro-index (length (car first-line)))
+                 (push nil current-word)
+                 (typit--highlight-diff-char (+ word-offset micro-index) nil)
+                 (setq micro-index (1+ micro-index)))))))
+         good-strokes
+         bad-strokes
+         good-words
+         bad-words
+         num))
+      ;; ↓ body (construction of the buffer contents)
+      (insert (propertize "Typit" 'face 'typit-title) "\n\n")
+      (setq init-offset (point)
+            word-offset init-offset)
+      (typit--render-lines init-offset first-line second-line)
+      (typit--select-word word-offset (car first-line)))))
 
 ;;;###autoload
 (defun typit-basic-test ()
