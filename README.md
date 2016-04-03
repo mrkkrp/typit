@@ -52,8 +52,9 @@ To access these, type <kbd>M-x customize-group RET typit RET</kbd>.
 If you would like to improve the package, PR and issues are welcome. Also,
 it's OK to add dictionaries for other languages than English. To do so, you
 need to create a text file named `your-language.txt` and put it under the
-`dict` directory. Please make sure it's uses Unix-style (that is, LF)
-end-of-line sequence and it's desirable that the file ends with a newline.
+`dict` directory. That file should contain 1000 most common words from the
+language, a word per line. Please make sure that it uses Unix-style (that
+is, LF) end-of-line sequence and the file ends with a newline.
 
 Once dictionary file is created, add it to the definition of `typit-dict`
 customization parameter in `typit.el`. To try the game with new language
