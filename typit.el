@@ -3,7 +3,7 @@
 ;; Copyright © 2016 Mark Karpov <markkarpov@openmailbox.org>
 ;;
 ;; Author: Mark Karpov <markkarpov@openmailbox.org>
-;; URL: https://github.com/typit
+;; URL: https://github.com/mrkkrp/typit
 ;; Version: 0.1.0
 ;; Package-Requires: ((emacs "24.4") (f "0.18") (mmt "0.1.1"))
 ;; Keywords: games
