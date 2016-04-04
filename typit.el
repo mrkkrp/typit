@@ -321,12 +321,13 @@ least 1000 words so ‘typit-advanced-test’ could work properly."
         (current-word nil))
     (typit--with-buffer
       (lambda (window _value)
+        (message "Timer will start when you start tying…")
         (typit--report-results
          (catch 'total-time
            (cl-do
                ((ch
                  (prog1
-                     (read-char "Timer will start when you start typing…" t)
+                     (read-char nil t)
                    (setq test-started (float-time)))
                  (read-char "Typing…" t)))
                ((null ch))
