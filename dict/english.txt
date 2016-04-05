@@ -730,7 +730,7 @@ region
 island
 record
 direct
-microsoft
+Microsoft
 conference
 environment
 records
@@ -879,7 +879,7 @@ none
 wireless
 license
 Paul
-friday
+Friday
 lake
 whole
 annual
