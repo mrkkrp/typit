@@ -344,7 +344,7 @@ form
 events
 love
 old
-john
+John
 main
 call
 hours
@@ -434,7 +434,7 @@ gallery
 table
 register
 however
-june
+June
 October
 November
 market
