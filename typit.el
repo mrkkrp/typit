@@ -61,11 +61,11 @@
   "Face used to highlight current word.")
 
 (defface typit-correct-char
-  '((t (:foreground "spring green")))
+  '((t (:inherit success)))
   "Face used to color correctly typed characters.")
 
 (defface typit-wrong-char
-  '((t (:foreground "firebrick")))
+  '((t (:inherit error)))
   "Face used to color incorrectly typed characters.")
 
 (defface typit-statistic
