@@ -292,7 +292,12 @@ use as argument of ‘typit-test’ if user chooses to play again."
      (propertize (format "%4d" good-words) 'face 'typit-correct-char)
      " | "
      (propertize (format "%d" bad-words) 'face 'typit-wrong-char)
-     ")\n")))
+     ")\n"
+     (propertize "Accuracy" 'face 'typit-statistic)
+     "              "
+     (propertize (format "%6.2f %%" (* 100 (/ (float good-strokes) (+ good-strokes bad-strokes))))
+                 'face 'typit-value)
+     "\n")))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
