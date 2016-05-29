@@ -1,7 +1,7 @@
 # Typit
 
 [![License GPL 3](https://img.shields.io/badge/license-GPL_3-green.svg)](http://www.gnu.org/licenses/gpl-3.0.txt)
-[![MELPA](http://melpa.org/packages/typit-badge.svg)](http://melpa.org/#/typit)
+[![MELPA](https://melpa.org/packages/typit-badge.svg)](https://melpa.org/#/typit)
 [![Build Status](https://travis-ci.org/mrkkrp/typit.svg?branch=master)](https://travis-ci.org/mrkkrp/typit)
 
 This is a typing game for Emacs. In this game, you type words that are
