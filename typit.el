@@ -76,10 +76,11 @@
   '((t (:inherit font-lock-constant-face)))
   "Face used to render statistical values after typing.")
 
-(defcustom typit-dict "deutsch.txt"
+(defcustom typit-dict "english.txt"
   "Name of dictionary file to use."
   :tag  "Dictionary to use"
-  :type '(choice (const :tag "Deutsch" "deutsch.txt")))
+  :type '(choice (const :tag "English" "english.txt"))
+  :type '(choice (const :tag "German" "deutsch.txt")))
 
 (defcustom typit-dict-dir
   (when load-file-name
