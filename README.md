@@ -22,10 +22,9 @@ RET</kbd>.
 
 ## Usage
 
-This is really straightforward, just type <kbd>M-x typit-basic-test
-RET</kbd> and Typit window should appear (see the picture above). Timer will
-start when you start typing. When you are done, the following statistics
-will appear:
+Type <kbd>M-x typit-basic-test RET</kbd> and Typit window should appear (see
+the picture above). Timer will start when you start typing. When you are
+done, the following statistics will appear:
 
 ![Typit results](https://raw.githubusercontent.com/mrkkrp/typit/gh-pages/typit-results.png)
 

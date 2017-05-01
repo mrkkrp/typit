@@ -42,7 +42,7 @@
 ;; Settings & variables
 
 (defgroup typit nil
-  "Cool typing game similar to tests on 10 fast fingers."
+  "A typing game similar to tests on 10 fast fingers."
   :group  'games
   :tag    "Typit"
   :prefix "typit-"
