@@ -1,8 +1,8 @@
 ;;; typit.el --- Typing game similar to tests on 10 fast fingers -*- lexical-binding: t; -*-
 ;;
-;; Copyright © 2016–2017 Mark Karpov <markkarpov@openmailbox.org>
+;; Copyright © 2016–2017 Mark Karpov <markkarpov92@gmail.com>
 ;;
-;; Author: Mark Karpov <markkarpov@openmailbox.org>
+;; Author: Mark Karpov <markkarpov92@gmail.com>
 ;; URL: https://github.com/mrkkrp/typit
 ;; Version: 0.2.0
 ;; Package-Requires: ((emacs "24.4") (f "0.18") (mmt "0.1.1"))
