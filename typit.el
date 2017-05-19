@@ -27,9 +27,9 @@
 
 ;; This is a typing game for Emacs.  In this game, you type words that are
 ;; picked randomly from N most frequent words in language you're practicing,
-;; until time is up (by default it's one minute).  It's mostly quite similar
-;; to the “10 fast fingers” tests, with the difference that it's playable
-;; and fully configurable inside your Emacs.
+;; until time is up (by default it's one minute).  Typit is quite similar to
+;; the “10 fast fingers” tests, with the difference that it's playable and
+;; fully configurable inside your Emacs.
 
 ;;; Code:
 
@@ -42,7 +42,7 @@
 ;; Settings & variables
 
 (defgroup typit nil
-  "A typing game similar to tests on 10 fast fingers."
+  "Typing game similar to the tests on 10 fast fingers."
   :group  'games
   :tag    "Typit"
   :prefix "typit-"
@@ -185,7 +185,7 @@ rendered with `typit--render-line'."
 
 OFFSET specifies position where word starts.  CURRENT-WORD is the
 word to highlight.  By default the word is selected, unless
-UNSELECT is not NIL — in this case it's unselected."
+UNSELECT is not NIL—in this case it's unselected."
   (if unselect
       (dolist (v (overlays-at offset))
         (when (eq (overlay-get v 'type) 'typit-current-word)

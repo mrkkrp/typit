@@ -6,9 +6,9 @@
 
 This is a typing game for Emacs. In this game, you type words that are
 picked randomly from N most frequent words in language you're practicing,
-until time is up (by default it's one minute). It's mostly quite similar to
-the “10 fast fingers” tests, with the difference that it's playable and
-fully configurable inside your Emacs.
+until time is up (by default it's one minute). Typit is quite similar to the
+“10 fast fingers” tests, with the difference that it's playable and fully
+configurable inside your Emacs.
 
 ![Typit typing](https://raw.githubusercontent.com/mrkkrp/typit/gh-pages/typit-typing.png)
 
@@ -56,10 +56,11 @@ language, a word per line. Please make sure that it uses Unix-style (that
 is, LF) end-of-line sequence and the file ends with a newline.
 
 Once dictionary file is created, add it to the definition of `typit-dict`
-customization parameter in `typit.el`. To try the game with new language
-added, change value of `typit-dict` accordingly via customization interface,
-`setq`, or via `let`-bind, and then run one of the commands that start the
-game (`typit-basic-test`, `typit-advanced-test`, or `typit-test`).
+customization parameter in `typit.el`. To try the game with a new language
+added, change value of `typit-dict` accordingly via the customization
+interface, `setq`, or with `let`-binding, and then run one of the commands
+that start the game (`typit-basic-test`, `typit-advanced-test`, or
+`typit-test`).
 
 ## License
 
