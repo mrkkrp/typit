@@ -64,6 +64,6 @@ that start the game (`typit-basic-test`, `typit-advanced-test`, or
 
 ## License
 
-Copyright © 2016–2018 Mark Karpov
+Copyright © 2016–2019 Mark Karpov
 
 Distributed under GNU GPL, version 3.
