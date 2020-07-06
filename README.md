@@ -2,7 +2,7 @@
 
 [![License GPL 3](https://img.shields.io/badge/license-GPL_3-green.svg)](http://www.gnu.org/licenses/gpl-3.0.txt)
 [![MELPA](https://melpa.org/packages/typit-badge.svg)](https://melpa.org/#/typit)
-[![CircleCI](https://circleci.com/gh/mrkkrp/typit/tree/master.svg?style=svg)](https://circleci.com/gh/mrkkrp/typit/tree/master)
+![CI](https://github.com/mrkkrp/modalka/workflows/CI/badge.svg?branch=master)
 
 This is a typing game for Emacs. In this game, you type words that are
 picked randomly from N most frequent words in language you're practicing,
