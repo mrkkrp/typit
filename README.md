@@ -14,25 +14,30 @@ fully configurable from your Emacs.
 
 ## Installation
 
-Download this package and place it in a location where Emacs can see it.
-Then add `(require 'typit)` to your configuration file. Done!
+The package is available via MELPA, so you can just type `M-x
+package-install RET typit RET`.
 
-The package is available via MELPA, so you can just <kbd>M-x package-install
-RET typit RET</kbd>.
+If you would like to install the package manually, download or clone it and
+put on Emacs' `load-path`. Then you can require it in your init file like
+this:
+
+```emacs-lisp
+(require 'typit)
+```
 
 ## Usage
 
-Type <kbd>M-x typit-basic-test RET</kbd> and the Typit window should appear.
-The timer will start once you begin typing. When you are done, some
-statistics will be displayed:
+Type `M-x typit-basic-test RET` and the Typit window should appear. The
+timer will start once you begin typing. When you are done, some statistics
+will be displayed:
 
 ![Typit results](https://raw.githubusercontent.com/mrkkrp/typit/gh-pages/typit-results.png)
 
-If you feel like a master, you can try <kbd>M-x typit-advanced-test
-RET</kbd> which uses the 1000 most common English words (`typit-basic-test`
-uses the 200 most common words). You can also call the more general
-`typit-test` with a numeric argument specifying how many words to use (note
-that the default dictionary has 1000 words in total at the moment).
+If you feel like a master, you can try `M-x typit-advanced-test RET` which
+uses the 1000 most common English words (`typit-basic-test` uses the 200
+most common words). You can also call the more general `typit-test` with a
+numeric argument specifying how many words to use (note that the default
+dictionary has 1000 words in total at the moment).
 
 ## Customization
 
@@ -45,7 +50,7 @@ like:
 * The length of the generated line of words (in characters)
 * The duration of the test in seconds
 
-To access these, type <kbd>M-x customize-group RET typit RET</kbd>.
+To access these, type `M-x customize-group RET typit RET`.
 
 ## Contribution
 
