@@ -4,7 +4,7 @@
 ;;
 ;; Author: Mark Karpov <markkarpov92@gmail.com>
 ;; URL: https://github.com/mrkkrp/typit
-;; Version: 0.2.2
+;; Version: 0.3.0
 ;; Package-Requires: ((emacs "24.4") (f "0.18") (mmt "0.1.1"))
 ;; Keywords: games
 ;;
@@ -100,6 +100,13 @@
   "Duration of a test in seconds."
   :tag  "Test duration in seconds"
   :type 'integer)
+
+(defcustom typit-display-action 'display-buffer-below-selected
+  "Display action to use for the Typit window."
+  :tag  "Display action to use"
+  :type '(choice
+          (function :tag "below selected window" display-buffer-below-selected)
+          (function :tag "at bottom" display-buffer-at-bottom)))
 
 (defvar typit--dict nil
   "Vector of words to use (from most common to least common).
@@ -230,21 +237,21 @@ is shown it's in a read-only state."
     `(let ((,buffer (get-buffer-create "*typit*")))
        (with-current-buffer ,buffer
          (with-current-buffer-window
-          ;; buffer or name
-          ,buffer
-          ;; action (for `display-buffer')
-          (cons 'display-buffer-below-selected
-                '((window-height . fit-window-to-buffer)
-                  (preserve-size . (nil . t))))
-          ;; quit-function
-          (lambda (,window ,value)
-            (unwind-protect
-                (funcall ,quit-function ,window ,value)
-              (when (window-live-p ,window)
-                (quit-restore-window ,window 'kill))))
-          ;; body
-          (setq cursor-type nil)
-          ,@body)))))
+             ;; buffer or name
+             ,buffer
+             ;; action (for `display-buffer')
+             (cons typit-display-action
+                   '((window-height . fit-window-to-buffer)
+                     (preserve-size . (nil . t))))
+             ;; quit-function
+             (lambda (,window ,value)
+               (unwind-protect
+                   (funcall ,quit-function ,window ,value)
+                 (when (window-live-p ,window)
+                   (quit-restore-window ,window 'kill))))
+           ;; body
+           (setq cursor-type nil)
+           ,@body)))))
 
 (defun typit--report-results
     (total-time
