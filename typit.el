@@ -82,7 +82,8 @@
   :type '(choice (const :tag "English" "english.txt")
                  (const :tag "German"  "german.txt")
                  (const :tag "French"  "french.txt")
-                 (const :tag "Russian" "russian.txt")))
+                 (const :tag "Russian" "russian.txt")
+                 (const :tag "Spanish - Don Quijote" "dictionary.quijote.es.txt")))
 
 (defcustom typit-dict-dir
   (when load-file-name
