@@ -9,10 +9,12 @@ pkgs.stdenv.mkDerivation {
   name = "typit";
   src = source;
   buildInputs = [
-    (pkgs.emacs26WithPackages (epkgs: [epkgs.f epkgs.mmt]))
+    (pkgs.emacs28WithPackages (epkgs: [epkgs.f epkgs.mmt]))
   ];
   buildPhase = ''
-    emacs -L . --batch -f batch-byte-compile *.el
+    emacs -L . --batch -f batch-byte-compile *.el 2> stderr.txt
+    cat stderr.txt
+    ! grep -q ': Warning:' stderr.txt
   '';
   installPhase = ''
     LISPDIR=$out/share/emacs/site-lisp
