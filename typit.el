@@ -109,6 +109,11 @@
           (function :tag "below selected window" display-buffer-below-selected)
           (function :tag "at bottom" display-buffer-at-bottom)))
 
+(defcustom typit-history-log nil
+  "If non-nil, location to store a log of scores with dates for progress tracking."
+  :tag "Where to store history log"
+  :type 'file)
+
 (defvar typit--dict nil
   "Vector of words to use (from most common to least common).
 
@@ -275,37 +280,46 @@ use as argument of `typit-test' if the user chooses to play again."
       (when (y-or-n-p "Would you like to play again? ")
         (typit-test num)))
     ;; body
-    (insert
-     (propertize "Your results" 'face 'typit-title)
-     "\n\n"
-     (propertize "Words per minute (WPM)" 'face 'typit-statistic)
-     "  "
-     (propertize (format "%4d" (round (/ good-strokes (/ total-time 12))))
-                 'face 'typit-value)
-     "\n"
-     (propertize "Keystrokes" 'face 'typit-statistic)
-     "              "
-     (propertize (format "%4d" (+ good-strokes bad-strokes))
-                 'face 'typit-value)
-     " ("
-     (propertize (format "%4d" good-strokes) 'face 'typit-correct-char)
-     " | "
-     (propertize (format "%d" bad-strokes) 'face 'typit-wrong-char)
-     ")\n"
-     (propertize "Words" 'face 'typit-statistic)
-     "                   "
-     (propertize (format "%4d" (+ good-words bad-words))
-                 'face 'typit-value)
-     " ("
-     (propertize (format "%4d" good-words) 'face 'typit-correct-char)
-     " | "
-     (propertize (format "%d" bad-words) 'face 'typit-wrong-char)
-     ")\n"
-     (propertize "Accuracy" 'face 'typit-statistic)
-     "              "
-     (propertize (format "%6.2f %%" (* 100 (/ (float good-strokes) (+ good-strokes bad-strokes))))
-                 'face 'typit-value)
-     "\n")))
+    (let ((wpm (round (/ good-strokes (/ total-time 12))))
+          (accuracy (* 100 (/ (float good-strokes) (+ good-strokes bad-strokes)))))
+
+      (when typit-history-log
+        (with-demoted-errors "Unable to record typit log: %S"
+          (with-current-buffer (find-file-noselect typit-history-log)
+            (goto-char (point-max))
+            (insert (format "%s,%d,%.2f\n" (format-time-string "%FT%T%z") wpm accuracy)))))
+
+      (insert
+       (propertize "Your results" 'face 'typit-title)
+       "\n\n"
+       (propertize "Words per minute (WPM)" 'face 'typit-statistic)
+       "  "
+       (propertize (format "%4d" wpm)
+                   'face 'typit-value)
+       "\n"
+       (propertize "Keystrokes" 'face 'typit-statistic)
+       "              "
+       (propertize (format "%4d" (+ good-strokes bad-strokes))
+                   'face 'typit-value)
+       " ("
+       (propertize (format "%4d" good-strokes) 'face 'typit-correct-char)
+       " | "
+       (propertize (format "%d" bad-strokes) 'face 'typit-wrong-char)
+       ")\n"
+       (propertize "Words" 'face 'typit-statistic)
+       "                   "
+       (propertize (format "%4d" (+ good-words bad-words))
+                   'face 'typit-value)
+       " ("
+       (propertize (format "%4d" good-words) 'face 'typit-correct-char)
+       " | "
+       (propertize (format "%d" bad-words) 'face 'typit-wrong-char)
+       ")\n"
+       (propertize "Accuracy" 'face 'typit-statistic)
+       "              "
+       (propertize (format "%6.2f %%" accuracy)
+                   'face 'typit-value)
+       "\n"))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
